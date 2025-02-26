@@ -1,12 +1,12 @@
 # Câu 1:
-**- Cứ mở trực tiếp trên trình duyệt thôi ạ.**
+**- Cứ mở trực tiếp index.html trên trình duyệt thôi ạ.**
 **- Em tạo 3 khối: lấy Json, vẽ giao diện, highlight.**
     + Khối lấy Json: dùng fetch và lấy dialog từ jameslan.Json
     + Khối vẽ giao diện: em dùng chatGPT đưa code ghép các dialog (text) với nhau (có xử lí các dấu câu..)
     + Khối highlight em dựa trên nội dung của file json về timestamp, hỏi chatGPT code và style css vàng lên 
 
 # Câu 2:
-**- Cứ mở trực tiếp trên trình duyệt thôi ạ.**
+**- Cứ mở trực tiếp index.html trên trình duyệt thôi ạ.**
 **- Em tạo 5 khối chính: cấu hình API, gọi API, xử lý phản hồi, chạy chương trình, vẽ tin nhắn**
     + Khối cấu hình: vì groq yêu cầu 1 vài cấu hình, pass key... để lấy dữ liệu, em lưu vào đây
     + Khối gọi API: dùng fetch gọi API theo cấu hình đã làm
