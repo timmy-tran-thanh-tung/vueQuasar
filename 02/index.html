@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Highlight Văn Bản Theo Audio</title>
+D <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      width: 100%;
+    }
+
+    .highlight {
+      background-color: yellow;
+    }
+
+    .word {
+      display: inline-block;
+      margin-right: 5px;
+    }
+
+    .chat-container {
+      display: inline-flex;
+      flex-direction: column;
+      width: 1140px;
+      margin: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .chat-box {
+      height: 300px;
+      overflow-y: auto;
+      border-bottom: 1px solid #ccc;
+      margin-bottom: 10px;
+      padding: 5px;
+    }
+
+    .user {
+      color: #5e5e5e;
+    }
+
+    .bot {
+      color: #9d9d9d;
+    }
+
+    input,
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+    }
+
+    #user-input {
+      flex: 1;
+      width: auto;
+    }
+
+    .container-1140 {
+      max-width: 1140px;
+      width: 100%;
+      padding: 12px;
+    }
+
+    .audio-container {
+      flex-direction: column;
+      gap: 32px;
+      width: 100%;
+      margin: auto;
+      padding-top: 64px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: 64px;
+    }
+
+    .title {
+      font-size: 16px;
+      text-align: center;
+      color: #5d5d5d;
+      padding: 12px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container-1140 chat-container" style="margin-bottom: 12px; margin-top: 12px;">
+    <div class="title">Deepseek nhưng là ở một diễn biến khác</div>
+  </div>
+
+  <div class="chat-container container-1140">
+    <div class="chat-box" id="chat-box"></div>
+    <input type="text" id="user-input" placeholder="Nhập tin nhắn..." />
+    <button id="send-button" onclick="sendMessage()">Gửi</button>
+  </div>
+
+
+  <script>
+    let textJs = [];
+    let stampJs = [];
+    var messages = [];
+
+    // 1️⃣ KHỐI CẤU HÌNH API
+    const API_CONFIG = {
+      url: "https://api.groq.com/openai/v1/chat/completions",
+      key: "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", // Thay bằng API Key thực tế
+      model: "deepseek-r1-distill-qwen-32b",
+      temperature: 0.8,
+      max_tokens: 1024
+    };
+
+    // 2️⃣ KHỐI GỌI API
+    async function fetchGroqResponse(messages) {
+      try {
+        const response = await fetch(API_CONFIG.url, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${API_CONFIG.key}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: API_CONFIG.model,
+            messages: messages,
+            temperature: API_CONFIG.temperature,
+            max_tokens: API_CONFIG.max_tokens
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Lỗi HTTP! Mã trạng thái: ${response.status}`);
+        }
+
+        return await response.json(); // Trả về dữ liệu JSON từ API
+      } catch (error) {
+        console.error("❌ Lỗi khi gọi API:", error);
+        return null;
+      }
+    }
+
+    // 3️⃣ KHỐI XỬ LÝ PHẢN HỒI
+    function handleResponse(data) {
+      if (data && data.choices && data.choices.length > 0) {
+        console.log("✅ Phản hồi từ Groq API:", data);
+        console.log("💬 AI Trả lời:", data.choices[0].message.content);
+      } else {
+        console.log("⚠️ Không có phản hồi hợp lệ từ API.");
+      }
+    }
+
+    // 4️⃣ KHỐI CHẠY CHƯƠNG TRÌNH
+    async function runChat() {
+      var messages = [
+        { role: "system", content: "Tôi là Deepseek chỉ nói tiếng việt ngắn gọn, đơn giản, dễ hiểu, rõ ràng, thân thiện, có xuống hàng đầy đủ, luôn cụ thể, không trả lời hết lan man. Tôi luôn muốn ngắn gọn 100%." },
+      ];
+
+      const apiResponse = await fetchGroqResponse(messages);
+      handleResponse(apiResponse);
+    }
+
+    // 2️⃣ HÀM VẼ TIN NHẮN
+    async function sendMessage() {
+      var userInput = document.getElementById("user-input");
+      var chatBox = document.getElementById("chat-box");
+
+      let userText = userInput.value.trim();
+      if (userText === "") return; // Không gửi tin nhắn rỗng
+
+      // Hiển thị tin nhắn của người dùng
+      chatBox.innerHTML += `<p class="user">Bạn: ${userText}</p>`;
+      userInput.value = ""; // Xóa input sau khi gửi
+      chatBox.scrollTop = chatBox.scrollHeight; // Cuộn xuống cuối khi user gửi text
+
+      // Thêm tin nhắn của người dùng vào mảng `messages`
+      messages.push({ role: "user", content: userText });
+
+      // Gọi API để nhận phản hồi từ chatbot (có can thiệp thẻ <think></think>)
+      let botResponse = await fetchGroqResponse(messages);
+      var content = botResponse.choices[0].message.content.replace(/<think>.*?<\/think>/gs, "").trim();
+
+      // Hiển thị phản hồi từ chatbot
+      chatBox.innerHTML += `<p class="bot">💬 Trả lời: ${content}</p>`;
+      chatBox.scrollTop = chatBox.scrollHeight; // Cuộn xuống cuối khi bot trả text
+
+      // Lưu phản hồi của bot vào lịch sử hội thoại
+      messages.push({ role: "assistant", content: content });
+    }
+
+
+    // Gọi hàm để chạy chương trình
+    runChat();
+
+    // Lệnh tự gửi khi bấm Enter
+    document.getElementById("user-input").addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {  // Kiểm tra nếu phím Enter được nhấn
+        event.preventDefault();  // Ngăn chặn xuống dòng trong ô input
+        document.getElementById("send-button").click();  // Kích hoạt nút
+      }
+    });
+
+  </script>
+
+</body>
+
+</html>

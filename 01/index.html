@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Highlight Văn Bản Theo Audio</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      font-family: Arial, sans-serif;
+      width: 100%;
+    }
+
+    .highlight {
+      background-color: yellow;
+    }
+
+    .word {
+      display: inline-block;
+      margin-right: 5px;
+    }
+
+    .container-1140 {
+      max-width: 1140px;
+      width: 100%;
+      padding: 6px;
+    }
+
+    .audio-container {
+      flex-direction: column;
+      gap: 32px;
+      width: 100%;
+      margin: auto;
+      padding-top: 64px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: 64px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="audio-container container-1140">
+    <audio id="audio" controls>
+      <source src="jameslan.ogg" type="audio/mpeg">
+      Trình duyệt của bạn không hỗ trợ audio.
+    </audio>
+    <div id="text-container" class="container-1140"></div>
+  </div>
+
+  <script>
+    let textJs = [];
+    let stampJs = [];
+
+    // 1️⃣ Khối lấy JSON
+    async function loadJson() {
+      try {
+        let response = await fetch("jameslan.json");
+        let data = await response.json();
+        textJs = data.timestamp.map(entry => entry[2]); // Lấy text từ timestamp
+        stampJs = data.timestamp;
+        console.log("✅ JSON đã tải:", data);
+        drawText(); // Gọi vẽ giao diện sau khi có dữ liệu
+      } catch (error) {
+        console.error("❌ Lỗi khi tải JSON:", error);
+      }
+    }
+
+    // 2️⃣ Khối vẽ giao diện (có kiểm tra dấu câu)
+    function drawText() {
+      let container = document.getElementById("text-container");
+      container.innerHTML = ""; // Xóa nội dung cũ
+
+      stampJs.forEach((entry, index) => {
+        let word = entry[2]; // Lấy từ hiện tại
+        let wordSpan = document.createElement("span");
+
+        wordSpan.id = `word-${index}`;
+        wordSpan.classList.add("word");
+
+        // Nếu là dấu câu, dính vào từ trước đó
+        if (/^[.,!?…]+$/.test(word) && index > 0) {
+          let prevSpan = document.getElementById(`word-${index - 1}`);
+          if (prevSpan) {
+            prevSpan.textContent += word; // Gắn dấu câu vào từ trước
+            return; // Không tạo span mới cho dấu câu
+          }
+        }
+
+        wordSpan.textContent = word;
+        container.appendChild(wordSpan);
+      });
+
+      setupHighlight(); // Khởi chạy highlight sau khi có HTML
+    }
+
+    // 3️⃣ Khối highlight
+    function setupHighlight() {
+      const audio = document.getElementById("audio");
+      let currentIndex = -1; // Trạng thái từ đang highlight
+
+      audio.addEventListener("timeupdate", () => {
+        let currentTime = audio.currentTime * 1000; // Chuyển sang mili giây
+
+        stampJs.forEach((entry, index) => {
+          let startTime = entry[0];
+          let endTime = startTime + entry[1];
+
+          if (currentTime >= startTime && currentTime < endTime) {
+            if (currentIndex !== index) {
+              if (currentIndex !== -1) {
+                let prevWord = document.getElementById(`word-${currentIndex}`);
+                if (prevWord) prevWord.classList.remove("highlight");
+              }
+              let newWord = document.getElementById(`word-${index}`);
+              if (newWord) newWord.classList.add("highlight");
+              currentIndex = index;
+            }
+          }
+        });
+
+        // Khi audio vượt quá từ cuối, xóa highlight cuối cùng
+        if (currentIndex !== -1 && currentTime > stampJs[stampJs.length - 1][0] + stampJs[stampJs.length - 1][1]) {
+          let lastWord = document.getElementById(`word-${currentIndex}`);
+          if (lastWord) lastWord.classList.remove("highlight");
+        }
+      });
+    }
+
+
+    // Gọi load JSON khi trang tải
+    loadJson();
+
+  </script>
+
+</body>
+
+</html>
